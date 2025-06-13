@@ -1,0 +1,26 @@
+{
+    "id": "B5796C1A",
+    "path": "~/Documents/interstate_conflict/code/01_setup/01_global/01_utility_functions/cleanString.R",
+    "project_path": null,
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1749821688720.0,
+    "source_on_save": false,
+    "relative_order": 7,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "10,0",
+        "scrollLine": "0"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1715172019,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1715172019,
+    "read_only": false,
+    "read_only_alternatives": []
+}

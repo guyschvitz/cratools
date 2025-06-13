@@ -1,0 +1,9 @@
+# Generate a date-based series
+data <- data.frame(start = as.Date(c("2021-01-01", "2021-02-01")),
+end = as.Date(c("2021-01-05", "2021-02-05")))
+data$id <- "A"
+generateSeries(data, "start", "end")
+
+
+data <- data.frame(start = c(1, 4), end = c(3, 6))
+generateSeries(data, "start", "end")

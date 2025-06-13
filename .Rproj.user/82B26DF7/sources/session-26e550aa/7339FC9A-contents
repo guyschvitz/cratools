@@ -1,0 +1,164 @@
+#' Generate a Series
+#'
+#' This function generates a series of values between a start and end column within a data frame.
+#' The generated series can be based on dates or numeric values.
+#'
+#' @param data A data frame containing the start and end columns.
+#' @param start The name of the column containing the start values.
+#' @param end The name of the column containing the end values.
+#' @param step The step size for the generated series (default: 1).
+#' @param timeint The time interval for date-based series (default: "day").
+#' @param varname The name of the output series column (default: "series").
+#'
+#' @return A data frame with the original data and the generated series column.
+#' @export
+#'
+#' @examples
+#' # Generate a numeric series
+#' data <- data.frame(start = c(1, 4), end = c(3, 6))
+#' generateSeries(data, "start", "end")
+#'
+#' # Generate a date-based series
+#' data <- data.frame(start = as.Date(c("2021-01-01", "2021-02-01")),
+#' end = as.Date(c("2021-01-05", "2021-02-05")))
+#' generateSeries(data, "start", "end")
+generateSeries <- function(input.df, start, end, step = 1, timeint = "day",
+                           varname = "series") {
+  # Input validation
+  if (missing(input.df) || is.null(input.df)) {
+    stop("Argument 'input.df' is required and cannot be NULL")
+  }
+  
+  if (missing(start) || missing(end)) {
+    stop("Both 'start' and 'end' column names must be provided")
+  }
+  
+  if (!is.character(start) || !is.character(end) || !is.character(varname)) {
+    stop("Column names must be character strings")
+  }
+  
+  if (length(start) != 1 || length(end) != 1 || length(varname) != 1) {
+    stop("Column names must be single values")
+  }
+  
+  # Convert to data frame and validate structure
+  input.df <- tryCatch(
+    as.data.frame(input.df),
+    error = function(e) stop("Cannot convert input to data frame: ", e$message)
+  )
+  
+  if (nrow(input.df) == 0) {
+    warning("Input data frame is empty")
+    return(data.frame())
+  }
+  
+  # Check if columns exist
+  if (!start %in% names(input.df)) {
+    stop("Start column '", start, "' not found in input.df")
+  }
+  
+  if (!end %in% names(input.df)) {
+    stop("End column '", end, "' not found in input.df")
+  }
+  
+  if (varname %in% names(input.df)) {
+    warning("Output column '", varname, "' already exists and will be overwritten")
+  }
+  
+  # Validate step parameter
+  if (!is.numeric(step) || length(step) != 1 || step <= 0) {
+    stop("Step must be a positive numeric value")
+  }
+  
+  # Validate timeint parameter
+  valid_timeints <- c("sec", "min", "hour", "day", "week", "month", "quarter", "year")
+  if (!timeint %in% valid_timeints) {
+    stop("timeint must be one of: ", paste(valid_timeints, collapse = ", "))
+  }
+  
+  # Check for missing values
+  if (any(is.na(input.df[, start]))) {
+    stop("Start column contains missing values")
+  }
+  
+  if (any(is.na(input.df[, end]))) {
+    stop("End column contains missing values")
+  }
+  
+  # Determine if we're working with dates
+  start.is.date <- inherits(input.df[, start], "Date")
+  end.is.date <- inherits(input.df[, end], "Date")
+  
+  # Check for consistent data types
+  if (start.is.date != end.is.date) {
+    stop("Start and end columns must have the same data type (both Date or both numeric)")
+  }
+  
+  is.date <- start.is.date && end.is.date
+  
+  # Validate numeric columns if not dates
+  if (!is.date) {
+    if (!is.numeric(input.df[, start]) || !is.numeric(input.df[, end])) {
+      stop("Non-date columns must be numeric")
+    }
+  }
+  
+  # Check for valid ranges (end >= start)
+  invalid.ranges <- if (is.date) {
+    input.df[, end] < input.df[, start]
+  } else {
+    input.df[, end] < input.df[, start]
+  }
+  
+  if (any(invalid.ranges)) {
+    warning("Some end values are less than start values; these will produce empty sequences")
+  }
+  
+  # Prepare step parameter
+  if (is.date) {
+    step <- paste(step, timeint)
+  }
+  
+  # Generate sequences with error handling
+  seq.out <- tryCatch({
+    Map(seq, input.df[, start], input.df[, end], step)
+  }, error = function(e) {
+    stop("Error generating sequences: ", e$message)
+  })
+  
+  # Calculate sequence lengths
+  seq.lengths <- sapply(seq.out, length)
+  
+  # Check for empty sequences
+  if (all(seq.lengths == 0)) {
+    warning("All sequences are empty; returning empty data frame")
+    return(data.frame())
+  }
+  
+  # Replicate original data to match sequence lengths
+  output.df <- tryCatch({
+    as.data.frame(lapply(input.df, rep, seq.lengths))
+  }, error = function(e) {
+    stop("Error replicating data: ", e$message)
+  })
+  
+  # Add the generated series column
+  output.df$var <- if (is.date) {
+    tryCatch({
+      as.Date(unlist(seq.out), origin = "1970-01-01")
+    }, error = function(e) {
+      stop("Error converting date sequences: ", e$message)
+    })
+  } else {
+    unlist(seq.out)
+  }
+  
+  # Rename the series column
+  names(output.df)[which(names(output.df) == "var")] <- varname
+  
+  # Remove original start and end columns and return
+  cols.to.keep <- !names(output.df) %in% c(start, end)
+  result.df <- output.df[, cols.to.keep, drop = FALSE]
+  
+  return(result.df)
+}

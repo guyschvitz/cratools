@@ -1,0 +1,116 @@
+#' Apply CRA Color Scales
+#'
+#' This function provides adaptive color scales that work well with the CRA theme.
+#' It automatically selects appropriate color palettes based on the number of categories
+#' or provides sensible defaults for continuous scales.
+#'
+#' @param type Type of scale: "discrete" for categorical data, "continuous" for continuous data,
+#'   or "both" to return both discrete and continuous scales (default: "both").
+#' @param palette.discrete Color palette for discrete/categorical data. Options include:
+#'   "cra" (custom CRA colors), "viridis", "plasma", "Set2", "Dark2" (default: "cra").
+#' @param palette.continuous Color palette for continuous data. Options include:
+#'   "viridis", "plasma", "cividis", "blues", "reds" (default: "viridis").
+#' @param direction Direction of the color scale: 1 for normal, -1 for reversed (default: 1).
+#'
+#' @return A list of ggplot2 scale functions that can be added to plots.
+#' @export
+#'
+#' @examples
+#' library(ggplot2)
+#'
+#' # Discrete colors with default CRA palette
+#' ggplot(mtcars, aes(x = mpg, y = hp, color = factor(cyl))) +
+#'   geom_point() +
+#'   getCraGgTheme() +
+#'   getCraColors("discrete")
+#'
+#' # Continuous colors
+#' ggplot(mtcars, aes(x = mpg, y = hp, color = disp)) +
+#'   geom_point() +
+#'   getCraGgTheme() +
+#'   getCraColors("continuous")
+#'
+#' # Both discrete and continuous (for plots with multiple aesthetics)
+#' ggplot(mtcars, aes(x = factor(cyl), y = mpg, fill = factor(cyl))) +
+#'   geom_boxplot(aes(alpha = disp)) +
+#'   getCraGgTheme() +
+#'   getCraColors("both")
+getCraColors <- function(type = "both", palette.discrete = "cra", palette.continuous = "viridis", direction = 1) {
+
+  # Input validation
+  valid.types <- c("discrete", "continuous", "both")
+  if (!type %in% valid.types) {
+    stop("Argument 'type' must be one of: ", paste(valid.types, collapse = ", "))
+  }
+
+  valid.discrete <- c("cra", "viridis", "plasma", "Set2", "Dark2")
+  if (!palette.discrete %in% valid.discrete) {
+    stop("Argument 'palette.discrete' must be one of: ", paste(valid.discrete, collapse = ", "))
+  }
+
+  valid.continuous <- c("viridis", "plasma", "cividis", "blues", "reds")
+  if (!palette.continuous %in% valid.continuous) {
+    stop("Argument 'palette.continuous' must be one of: ", paste(valid.continuous, collapse = ", "))
+  }
+
+  if (!direction %in% c(1, -1)) {
+    stop("Argument 'direction' must be 1 or -1")
+  }
+
+  # Define custom CRA color palette
+  cra.colors <- c(
+    "#2E86AB",  # Blue
+    "#A23B72",  # Magenta
+    "#F18F01",  # Orange
+    "#C73E1D",  # Red
+    "#7209B7",  # Purple
+    "#277F8E",  # Teal
+    "#4B8B3B",  # Green
+    "#D4A574",  # Tan
+    "#85182A",  # Dark Red
+    "#3D315B"   # Dark Purple
+  )
+
+  # Create scale lists
+  scales <- list()
+
+  if (type %in% c("discrete", "both")) {
+    if (palette.discrete == "cra") {
+      scales <- append(scales, list(
+        scale_color_manual(values = cra.colors),
+        scale_fill_manual(values = cra.colors)
+      ))
+    } else if (palette.discrete %in% c("Set2", "Dark2")) {
+      scales <- append(scales, list(
+        scale_color_brewer(type = "qual", palette = palette.discrete, direction = direction),
+        scale_fill_brewer(type = "qual", palette = palette.discrete, direction = direction)
+      ))
+    } else {
+      scales <- append(scales, list(
+        scale_color_viridis_d(option = palette.discrete, direction = direction),
+        scale_fill_viridis_d(option = palette.discrete, direction = direction)
+      ))
+    }
+  }
+
+  if (type %in% c("continuous", "both")) {
+    if (palette.continuous == "blues") {
+      scales <- append(scales, list(
+        scale_color_gradient(low = "#EFF3FF", high = "#08519C"),
+        scale_fill_gradient(low = "#EFF3FF", high = "#08519C")
+      ))
+    } else if (palette.continuous == "reds") {
+      scales <- append(scales, list(
+        scale_color_gradient(low = "#FEE5D9", high = "#A50F15"),
+        scale_fill_gradient(low = "#FEE5D9", high = "#A50F15")
+      ))
+    } else {
+      scales <- append(scales, list(
+        scale_color_viridis_c(option = palette.continuous, direction = direction),
+        scale_fill_viridis_c(option = palette.continuous, direction = direction)
+      ))
+    }
+  }
+
+  return(scales)
+}

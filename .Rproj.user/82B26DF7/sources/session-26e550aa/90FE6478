@@ -1,0 +1,26 @@
+{
+    "id": "90FE6478",
+    "path": "~/Documents/misc/cratools/R/getSeriesDf.R",
+    "project_path": "R/getSeriesDf.R",
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1749821976011.0,
+    "source_on_save": false,
+    "relative_order": 9,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "8,33",
+        "scrollLine": "1"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1749824101,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1749824100971,
+    "read_only": false,
+    "read_only_alternatives": []
+}

@@ -1,0 +1,24 @@
+{
+    "id": "5CC08712",
+    "path": "~/Documents/gcri/code/00_global/00_utility_functions/getCountryIsoCode.R",
+    "project_path": null,
+    "type": "r_source",
+    "hash": "0",
+    "contents": "",
+    "dirty": false,
+    "created": 1749821581436.0,
+    "source_on_save": false,
+    "relative_order": 4,
+    "properties": {
+        "source_window_id": "",
+        "Source": "Source"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1738747498,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1738747498,
+    "read_only": false,
+    "read_only_alternatives": []
+}

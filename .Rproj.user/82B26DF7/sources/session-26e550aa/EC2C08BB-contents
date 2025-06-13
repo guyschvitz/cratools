@@ -1,0 +1,35 @@
+Package: trendkit
+Type: Package
+Title: Time Series Trend and Anomaly Detection
+Version: 0.1.0
+Authors@R: c(
+    person(
+      "Guy", "Schvitz",
+      email = "guy.schvitz@ec.europa.eu",
+      role = c("aut", "cre"),
+      comment = c(ORCID = "https://orcid.org/0000-0002-5036-4123")
+    )
+  )
+Description: This package provides a set functions for detecting trends, 
+    anomalies, and patterns in time series data. It includes methods for 
+    deviation-based detection, percentile analysis, surge identification, 
+    trend analysis, and local maxima detection. Designed for analysing 
+    event counts, monitoring metrics, and identifying outliers in temporal 
+    data.
+License: MIT + file LICENSE
+URL: https://github.com/guyschvitz/trendkit
+BugReports: https://github.com/guyschvitz/trendkit/issues
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.1
+Depends: 
+    R (>= 3.5.0)
+Imports: 
+    slider
+Suggests: 
+    testthat (>= 3.0.0),
+    knitr,
+    rmarkdown,
+    ggplot2
+VignetteBuilder: knitr
+Config/testthat/edition: 3
