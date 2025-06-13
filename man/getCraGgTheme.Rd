@@ -28,30 +28,12 @@ A ggplot2 theme object that can be added to plots using the + operator.
 }
 \description{
 This function applies a custom ggplot2 theme with clean, minimal styling
-suitable for professional reports and presentations. It builds on theme_minimal()
+suitable for professional reports and presentations. It builds on ggplot2::theme_minimal()
 with customized legend positioning, axis styling, and improved readability.
 }
 \examples{
 library(ggplot2)
-
-# Basic usage
 ggplot(mtcars, aes(x = mpg, y = hp)) +
   geom_point() +
   getCraGgTheme()
-
-# With custom parameters
-ggplot(mtcars, aes(x = factor(cyl), y = mpg)) +
-  geom_boxplot() +
-  getCraGgTheme(base.size = 12, legend.position = "right")
-
-# With axis titles enabled
-ggplot(mtcars, aes(x = mpg, y = hp, color = factor(cyl))) +
-  geom_point() +
-  labs(x = "Miles per Gallon", y = "Horsepower", color = "Cylinders") +
-  getCraGgTheme(axis.titles = TRUE)
-
-# Without grid lines for cleaner look
-ggplot(mtcars, aes(x = factor(cyl), fill = factor(cyl))) +
-  geom_bar() +
-  getCraGgTheme(grid.lines = FALSE, legend.position = "none")
 }
