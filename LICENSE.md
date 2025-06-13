@@ -1,6 +1,6 @@
 # MIT License
 
-Copyright (c) 2025 cratools authors
+Copyright (c) 2025 Guy Schvitz
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
