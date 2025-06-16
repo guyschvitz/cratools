@@ -12,7 +12,6 @@
 
 # Build output
 .Rcheck/
-/man/*.Rd
 .Rbuildignore
 Meta/
 *.rdb
