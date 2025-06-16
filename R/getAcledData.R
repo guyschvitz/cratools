@@ -1,12 +1,26 @@
-#' getAcledData: Retrieve ACLED data from the API: https://api.acleddata.com/
+#' Retrieve ACLED data from the API
 #'
-#' @param api.email character. ACLED user email account
-#' @param api.key character: ACLED API key
-#' @param start.date date: Desired start-date of data. Default: NULL
-#' @param end.date date: Desired end-date of ACLED data. Default: NULL
-#' @param n.months numeric: Number of months of acled data needed. Default: 24
+#' This function queries the ACLED API for political violence and protest data
+#' over a specified date range or for a number of recent months.
 #'
-#' @returns A data.frame with ACLED data from the API
+#' @param api.email Character. ACLED user email account.
+#' @param api.key Character. ACLED API key.
+#' @param start.date Date. Desired start date of data (optional if \code{n.months} is specified). Default: \code{NULL}.
+#' @param end.date Date. Desired end date of data. Default: \code{Sys.Date()}.
+#' @param n.months Numeric. Number of months of data to retrieve before \code{end.date}. If both \code{start.date} and \code{n.months} are provided, only \code{n.months} is used. Default: \code{NULL}.
+#'
+#' @return A \code{data.frame} with ACLED data retrieved from the API.
+#'
+#' @export
+#'
+#' @examples
+#' \dontrun{
+#' acled.df <- getAcledData(
+#'   api.email = "your_email@example.com",
+#'   api.key = "your_api_key",
+#'   n.months = 6
+#' )
+#' }
 getAcledData <- function(api.email, api.key, start.date = NULL, end.date = NULL,
                          n.months = NULL){
   ## Load ACLED data

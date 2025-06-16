@@ -2,7 +2,7 @@
 % Please edit documentation in R/getAcledData.R
 \name{getAcledData}
 \alias{getAcledData}
-\title{getAcledData: Retrieve ACLED data from the API: https://api.acleddata.com/}
+\title{Retrieve ACLED data from the API}
 \usage{
 getAcledData(
   api.email,
@@ -13,19 +13,29 @@ getAcledData(
 )
 }
 \arguments{
-\item{api.email}{character. ACLED user email account}
+\item{api.email}{Character. ACLED user email account.}
 
-\item{api.key}{character: ACLED API key}
+\item{api.key}{Character. ACLED API key.}
 
-\item{start.date}{date: Desired start-date of data. Default: NULL}
+\item{start.date}{Date. Desired start date of data (optional if \code{n.months} is specified). Default: \code{NULL}.}
 
-\item{end.date}{date: Desired end-date of ACLED data. Default: NULL}
+\item{end.date}{Date. Desired end date of data. Default: \code{Sys.Date()}.}
 
-\item{n.months}{numeric: Number of months of acled data needed. Default: 24}
+\item{n.months}{Numeric. Number of months of data to retrieve before \code{end.date}. If both \code{start.date} and \code{n.months} are provided, only \code{n.months} is used. Default: \code{NULL}.}
 }
 \value{
-A data.frame with ACLED data from the API
+A \code{data.frame} with ACLED data retrieved from the API.
 }
 \description{
-getAcledData: Retrieve ACLED data from the API: https://api.acleddata.com/
+This function queries the ACLED API for political violence and protest data
+over a specified date range or for a number of recent months.
+}
+\examples{
+\dontrun{
+acled.df <- getAcledData(
+  api.email = "your_email@example.com",
+  api.key = "your_api_key",
+  n.months = 6
+)
+}
 }
