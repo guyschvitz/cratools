@@ -1,7 +1,7 @@
 Package: cratools
 Type: Package
 Title: Conflict Risk Analytics Utility Functions
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: c(
     person(
       "Guy", "Schvitz",
