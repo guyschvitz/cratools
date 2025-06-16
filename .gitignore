@@ -12,8 +12,15 @@
 
 # Build output
 .Rcheck/
+/man/*.Rd
 .Rbuildignore
+Meta/
+*.rdb
+*.rdx
+*.rds
 *.tar.gz
+.Rproj.user/
+.DS_Store
 
 # Docs (if generated locally)
 docs/
