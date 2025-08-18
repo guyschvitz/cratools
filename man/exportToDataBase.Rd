@@ -11,7 +11,8 @@ exportToDataBase(
   schema,
   table,
   create.if.missing = FALSE,
-  overwrite = FALSE
+  overwrite = FALSE,
+  strict.column.checks = TRUE
 )
 }
 \arguments{
@@ -28,6 +29,8 @@ exportToDataBase(
 \item{create.if.missing}{Logical. If TRUE, creates the table if it doesn't exist. If FALSE, stops with error. Default is FALSE}
 
 \item{overwrite}{Logical. If TRUE, overwrite the existing database table. If FALSE, append rows of 'input.df' to the existing table.}
+
+\item{strict.column.checks}{Logical. If TRUE, ensures that all database columns exist in 'input.df' (avoids empty columns in DB table)}
 }
 \value{
 A data.frame containing metadata on the export operation including schema, table, date, number of rows exported, and success status
