@@ -27,7 +27,6 @@ Imports:
     scales,
     tidyr,
     DBI,
-    acled.api,
     lubridate
 Suggests: 
     testthat (>= 3.0.0),
