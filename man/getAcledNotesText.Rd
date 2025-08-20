@@ -35,6 +35,7 @@ for a given country and time period. It can optionally group results by country
 and time unit (month, quarter, or year).
 }
 \examples{
+\dontrun{
 # Example with sample ACLED data
 notes.ls <- getAcledNotesText(
   acled.df = acled.df,
@@ -43,7 +44,6 @@ notes.ls <- getAcledNotesText(
   edate = as.Date("2025-08-01"),
   group.by = "month"
 )
-
-cat(notes.ls[[1]])
+}
 
 }

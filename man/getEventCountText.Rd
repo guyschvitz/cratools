@@ -43,8 +43,8 @@ If FALSE, only return total event counts (across all event types). Default TRUE.
 If FALSE, returns the aggregated data.frame.}
 }
 \value{
-If `output.as.text = TRUE`, a named character vector where each element contains a 
-formatted text summary of event counts by type and country for the specified time period.  
+If `output.as.text = TRUE`, a named character vector where each element contains a
+formatted text summary of event counts by type and country for the specified time period.
 If `output.as.text = FALSE`, a tidy data.frame with event counts by country, type, and date range.
 }
 \description{

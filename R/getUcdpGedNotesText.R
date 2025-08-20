@@ -14,6 +14,7 @@
 #'
 #' @examples
 #' # Example with sample GED data
+#' \dontrun{
 #' notes.ls <- getUcdpGedNotesText(
 #'   ged.df = ged.df,
 #'   ctry.id = "Nigeria",
@@ -21,8 +22,7 @@
 #'   edate = as.Date("2025-08-01"),
 #'   group.by = "month"
 #' )
-#'
-#' cat(notes.ls[[1]])
+#' }
 #'
 #' @export
 getUcdpGedNotesText <- function(ged.df,

@@ -14,6 +14,7 @@
 #' @return A named list of character strings. Each element is a formatted text block for one group.
 #'
 #' @examples
+#' \dontrun{
 #' # Example with sample ACLED data
 #' notes.ls <- getAcledNotesText(
 #'   acled.df = acled.df,
@@ -22,8 +23,7 @@
 #'   edate = as.Date("2025-08-01"),
 #'   group.by = "month"
 #' )
-#'
-#' cat(notes.ls[[1]])
+#' }
 #'
 #' @export
 getAcledNotesText <- function(acled.df,

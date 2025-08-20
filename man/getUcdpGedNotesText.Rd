@@ -35,6 +35,7 @@ for a specified country and time range, optionally grouped by time period.
 }
 \examples{
 # Example with sample GED data
+\dontrun{
 notes.ls <- getUcdpGedNotesText(
   ged.df = ged.df,
   ctry.id = "Nigeria",
@@ -42,7 +43,6 @@ notes.ls <- getUcdpGedNotesText(
   edate = as.Date("2025-08-01"),
   group.by = "month"
 )
-
-cat(notes.ls[[1]])
+}
 
 }
