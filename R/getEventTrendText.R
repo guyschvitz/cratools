@@ -41,11 +41,13 @@
 #' )
 #' }
 #'
-#' @importFrom dplyr filter group_by summarise rename mutate case_when across all_of arrange row_number left_join n bind_rows ungroup arrange
+#' @importFrom dplyr filter group_by summarise n rename left_join mutate case_when across all_of arrange row_number rowwise ungroup
 #' @importFrom glue glue
-#' @importFrom lubridate period floor_date
+#' @importFrom lubridate period floor_date ceiling_date add_with_rollback
+#' @importFrom stringr str_detect
 #' @importFrom purrr map_chr
 #' @importFrom rlang sym
+#' @importFrom stats coef lm
 #' @export
 getEventTrendText <- function(event.df,
                               event.date.col,
@@ -91,37 +93,30 @@ getEventTrendText <- function(event.df,
     stop("'last.obs.period.length' must be positive")
   }
 
-  # Coerce and validate dates
-  start.date <- tryCatch({
-    as.Date(start.date)
+  # Coerce dates and validate
+  tryCatch({
+    start.date <- as.Date(start.date)
+    end.date <- as.Date(end.date)
   }, error = function(e) {
-    stop("Invalid 'start.date' format. Use YYYY-MM-DD format.")
-  })
-
-  end.date <- tryCatch({
-    as.Date(end.date)
-  }, error = function(e) {
-    stop("Invalid 'end.date' format. Use YYYY-MM-DD format.")
+    stop("Invalid date format. Use YYYY-MM-DD format.")
   })
 
   if (end.date < start.date) {
     stop("'end.date' cannot be earlier than 'start.date'")
   }
 
-  # Calculate derived dates using similar logic to getTrendAnalysisDates
-  last.obs.end.date <- end.date
+  # Calculate derived dates
   last.obs.start.date <- lubridate::add_with_rollback(
-    last.obs.end.date,
+    end.date,
     -lubridate::period(last.obs.period.length, units = last.obs.period.units)
   ) + 1
+  last.obs.end.date <- end.date
 
   reference.start.date <- start.date
   reference.end.date <- last.obs.start.date - 1
 
-  # Validate that reference period exists
-  if (reference.end.date < reference.start.date) {
-    stop("Last observed period is too large - no reference period remains. Consider reducing 'last.obs.period.length' or extending the overall period.")
-  }
+  overall.start.date <- start.date
+  overall.end.date <- end.date
 
   # Coerce event date column
   if (!inherits(event.df[[event.date.col]], "Date")) {
@@ -202,14 +197,14 @@ getEventTrendText <- function(event.df,
     return(if (pct > 0) "Major increase" else "Major decrease")
   }
 
-  # Calculate last observed & reference counts
+  # Calculate reference & last observed counts
   last.obs.counts.df <- countEventsInPeriod(event.sub.df, last.obs.start.date, last.obs.end.date)
   reference.counts.df <- countEventsInPeriod(event.sub.df, reference.start.date, reference.end.date)
 
   # Trend analysis (for slope calculation over overall period)
   trend.df <- event.sub.df |>
-    dplyr::filter(!!rlang::sym(event.date.col) >= start.date &
-                    !!rlang::sym(event.date.col) <= end.date)
+    dplyr::filter(!!rlang::sym(event.date.col) >= overall.start.date &
+                    !!rlang::sym(event.date.col) <= overall.end.date)
 
   if (nrow(trend.df) == 0) {
     warning("No events found in the overall analysis period")
@@ -217,11 +212,13 @@ getEventTrendText <- function(event.df,
   }
 
   trend.df <- trend.df |>
-    dplyr::mutate(time_period = dplyr::case_when(
-      aggregate.by == "month" ~ lubridate::floor_date(!!rlang::sym(event.date.col), "month"),
-      aggregate.by == "quarter" ~ lubridate::floor_date(!!rlang::sym(event.date.col), "quarter"),
-      aggregate.by == "year" ~ lubridate::floor_date(!!rlang::sym(event.date.col), "year")
-    ))
+    dplyr::mutate(
+      time_period = dplyr::case_when(
+        aggregate.by == "month" ~ lubridate::floor_date(!!rlang::sym(event.date.col), "month"),
+        aggregate.by == "quarter" ~ lubridate::floor_date(!!rlang::sym(event.date.col), "quarter"),
+        aggregate.by == "year" ~ lubridate::floor_date(!!rlang::sym(event.date.col), "year")
+      )
+    )
 
   if (by.event.type) {
     trend.agg.df <- trend.df |>
@@ -286,8 +283,8 @@ getEventTrendText <- function(event.df,
       reference_end = reference.end.date,
       last_obs_start = last.obs.start.date,
       last_obs_end = last.obs.end.date,
-      overall_start = start.date,
-      overall_end = end.date
+      overall_start = overall.start.date,
+      overall_end = overall.end.date
     )
 
   # Calculate interval-normalized percentage change
@@ -313,18 +310,18 @@ getEventTrendText <- function(event.df,
       pct_change_label = vapply(pct_change, labelChangeFromPct, character(1)),
       trend_label = vapply(trend_slope, labelTrendFromSlope, character(1)),
       interpretation_trend = dplyr::case_when(
-        trend_label == "Insufficient data" ~ "Long-term trend — Insufficient data.",
+        trend_label == "Insufficient data" ~ "Long-term trend - Insufficient data.",
         TRUE ~ glue::glue(
-          "Long-term trend — {trend_label} (slope {ifelse(is.na(trend_slope), 'NA', sprintf('%+.2f', trend_slope))} events/period; {overall_start} – {overall_end})."
+          "Long-term trend - {trend_label} (slope {ifelse(is.na(trend_slope), 'NA', sprintf('%+.2f', trend_slope))} events/period; {overall_start} - {overall_end})."
         )
       ),
       interpretation_pct = dplyr::case_when(
-        is.na(pct_change) ~ "Recent change — Insufficient data to compute normalized change.",
+        is.na(pct_change) ~ "Recent change - Insufficient data to compute normalized change.",
         is.infinite(pct_change) ~ glue::glue(
-          "Recent change — Major increase from reference ({reference_start} – {reference_end}) to last observed ({last_obs_start} – {last_obs_end}): from 0 to {round(last_obs_avg, 1)} events per {interval_unit}."
+          "Recent change - Major increase from reference period ({reference_start} - {reference_end}) to last observed period ({last_obs_start} - {last_obs_end}): from 0 to {round(last_obs_avg, 1)} events per {interval_unit}."
         ),
         TRUE ~ glue::glue(
-          "Recent change — {pct_change_label} from reference ({reference_start} – {reference_end}) to last observed ({last_obs_start} – {last_obs_end}): {sprintf('%+.1f', pct_change)}% (reference {round(reference_avg, 1)} → last observed {round(last_obs_avg, 1)} per {interval_unit})."
+          "Recent change - {pct_change_label} from reference period ({reference_start} - {reference_end}) to last observed period ({last_obs_start} - {last_obs_end}): {sprintf('%+.1f', pct_change)}% (reference {round(reference_avg, 1)} -> last observed {round(last_obs_avg, 1)} per {interval_unit})."
         )
       )
     )
@@ -346,9 +343,9 @@ getEventTrendText <- function(event.df,
 
     header <- glue::glue(
       "Country: {country}\n",
-      "Overall period: {country.results$overall_start[1]} – {country.results$overall_end[1]}\n",
-      "Reference period: {country.results$reference_start[1]} – {country.results$reference_end[1]}\n",
-      "Last observed period: {country.results$last_obs_start[1]} – {country.results$last_obs_end[1]}"
+      "Overall period: {country.results$overall_start[1]} - {country.results$overall_end[1]}\n",
+      "Reference period: {country.results$reference_start[1]} - {country.results$reference_end[1]}\n",
+      "Last observed period: {country.results$last_obs_start[1]} - {country.results$last_obs_end[1]}"
     )
 
     # Generate body lines

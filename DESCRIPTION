@@ -29,7 +29,8 @@ Imports:
     DBI,
     lubridate,
     glue,
-    purrr
+    purrr,
+    stringr
 Suggests: 
     testthat (>= 3.0.0),
     knitr,
