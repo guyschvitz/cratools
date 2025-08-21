@@ -1,37 +1,42 @@
 #' Extract conflict event descriptions from ACLED data
 #'
 #' This function extracts and formats narrative descriptions from ACLED data
-#' for a given country and time period. It can optionally group results by country
-#' and time unit (month, quarter, or year).
+#' for a given country and time period. Can optionally group results by country
+#' when multiple countries are provided.
 #'
 #' @param acled.df A data.frame or data.table containing ACLED event data
 #' @param ctry.id Vector of country identifiers (character)
 #' @param sdate Start date (exclusive)
 #' @param edate End date (exclusive)
 #' @param use.regex Logical. Whether to interpret ctry.id as a regex pattern. Default is TRUE
-#' @param group.by Optional. Time unit to group by: "month", "quarter", or "year". Default is NULL (no grouping)
+#' @param group.by.country Logical. Whether to group results by country when multiple countries match. Default is TRUE
 #'
 #' @return A named list of character strings. Each element is a formatted text block for one group.
+#'         If group.by.country is TRUE, list names indicate the country. If FALSE, returns single element.
 #'
 #' @examples
 #' \dontrun{
-#' # Example with sample ACLED data
+#' # Single country for one time period
 #' notes.ls <- getAcledNotesText(
 #'   acled.df = acled.df,
 #'   ctry.id = "Nigeria",
 #'   sdate = as.Date("2025-05-01"),
-#'   edate = as.Date("2025-08-01"),
-#'   group.by = "month"
+#'   edate = as.Date("2025-08-01")
 #' )
 #' }
 #'
+#' @importFrom data.table as.data.table set
 #' @export
 getAcledNotesText <- function(acled.df,
                               ctry.id,
                               sdate,
                               edate,
                               use.regex = TRUE,
-                              group.by = NULL) {
+                              group.by.country = TRUE) {
+
+  # Ensure data.table is loaded
+  requireNamespace("data.table", quietly = TRUE)
+
   dt <- data.table::as.data.table(acled.df)
 
   # Validate input
@@ -41,7 +46,7 @@ getAcledNotesText <- function(acled.df,
 
   # Coerce date column to Date if not already
   if (!inherits(dt$event_date, "Date")) {
-    dt[, event_date := as.Date(event_date)]
+    data.table::set(dt, j = "event_date", value = as.Date(dt$event_date))
   }
 
   # Filter by date
@@ -58,27 +63,12 @@ getAcledNotesText <- function(acled.df,
     return(list("No events recorded in this period."))
   }
 
-  # Grouping
-  if (!is.null(group.by)) {
-    if (!is.null(group.by)) {
-      if (group.by == "month") {
-        dt[, time.grp := format(event_date, "%Y-%m")]
-      } else if (group.by == "quarter") {
-        dt[, time.grp := paste0(lubridate::year(event_date), " Q", lubridate::quarter(event_date))]
-      } else if (group.by == "year") {
-        dt[, time.grp := as.character(lubridate::year(event_date))]
-      } else {
-        stop("Invalid value for group.by. Use 'month', 'quarter', or 'year'.")
-      }
-    } else {
-      dt[, time.grp := NA_character_]
-    }
+  # Create group ID based on country grouping preference
+  if (group.by.country) {
+    data.table::set(dt, j = "group.id", value = dt$country)
   } else {
-    dt[, time.grp := NA_character_]
+    data.table::set(dt, j = "group.id", value = "all_countries")
   }
-
-  # Create group ID
-  dt[, group.id := ifelse(is.na(time.grp), country, paste(country, time.grp, sep = " - "))]
 
   # Remove duplicates based on the text-relevant fields before summarizing
   dt.unique <- unique(dt, by = c("group.id", "event_date", "event_type", "actor1", "actor2", "fatalities", "notes"))
@@ -92,5 +82,7 @@ getAcledNotesText <- function(acled.df,
 
   # Convert to named list: one list entry per group.id
   output.list <- setNames(out.ls$text, out.ls$group.id)
+
   return(output.list)
 }
+
