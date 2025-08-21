@@ -30,7 +30,9 @@ Imports:
     lubridate,
     glue,
     purrr,
-    stringr
+    stringr,
+    data.table,
+    tokenizers
 Suggests: 
     testthat (>= 3.0.0),
     knitr,

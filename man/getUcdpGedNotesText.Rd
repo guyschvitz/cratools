@@ -10,7 +10,7 @@ getUcdpGedNotesText(
   sdate,
   edate,
   use.regex = TRUE,
-  group.by = NULL
+  group.by.country = TRUE
 )
 }
 \arguments{
@@ -24,24 +24,25 @@ getUcdpGedNotesText(
 
 \item{use.regex}{Logical. Whether to interpret ctry.id as a regex pattern. Default is TRUE}
 
-\item{group.by}{Optional. Time unit to group by: "month", "quarter", or "year". Default is NULL (no grouping)}
+\item{group.by.country}{Logical. Whether to group results by country when multiple countries match. Default is TRUE}
 }
 \value{
 A named list of character strings. Each element is a formatted text block for one group.
+        If group.by.country is TRUE, list names indicate the country. If FALSE, returns single element.
 }
 \description{
 This function extracts and formats event narratives from UCDP GED data
-for a specified country and time range, optionally grouped by time period.
+for a specified country and time range. Can optionally group results by country
+when multiple countries are provided.
 }
 \examples{
-# Example with sample GED data
 \dontrun{
+# Single country for one time period
 notes.ls <- getUcdpGedNotesText(
   ged.df = ged.df,
   ctry.id = "Nigeria",
   sdate = as.Date("2025-05-01"),
-  edate = as.Date("2025-08-01"),
-  group.by = "month"
+  edate = as.Date("2025-08-01")
 )
 }
 
