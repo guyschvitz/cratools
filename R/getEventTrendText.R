@@ -11,23 +11,17 @@
 #' @param event.type.col character. Column name with event type.
 #' @param start.date Date or YYYY-MM-DD. Start of overall analysis period.
 #' @param end.date Date or YYYY-MM-DD. End of overall analysis period.
-#' @param last.obs.period.length integer. Length of the last observed period. Default 1.
-#' @param last.obs.period.units character. Units for last observed period ("month", "quarter", "year"). Default "month".
+#' @param period.length integer. Length of the last observed period. Default 1.
+#' @param period.unit character. Units for last observed period ("month", "quarter", "year"). Default "month".
 #' @param use.ctry.regex logical. If TRUE, regex-match countries; else exact match. Default TRUE.
 #' @param by.event.type logical. If TRUE, compute by event type; else totals. Default TRUE.
-#' @param aggregate.by character. One of "month","quarter","year". Default "month".
 #' @param output.as.text logical. If TRUE (default) return single character string; else data.frame.
 #'
-#' @return If output.as.text = FALSE, a data.frame with:
-#' country, (event_type), reference_start/end, last_obs_start/end, overall_start/end,
-#' reference_count, last_obs_count, reference_intervals, last_obs_intervals,
-#' reference_avg, last_obs_avg, pct_change, pct_change_label,
-#' trend_slope, trend_label, and the two interpretation columns.
-#' If output.as.text = TRUE, a single character string with one block per country.
+#' @return If output.as.text = FALSE, a data.frame with trend analysis results.
+#'   If output.as.text = TRUE, a single character string with one block per country.
 #'
 #' @examples
 #' \dontrun{
-#' # Example with ACLED data
 #' result <- getEventTrendText(
 #'   event.df = acled.df,
 #'   event.date.col = "event_date",
@@ -36,18 +30,11 @@
 #'   event.type.col = "event_type",
 #'   start.date = "2023-01-01",
 #'   end.date = "2023-12-31",
-#'   last.obs.period.length = 6,
-#'   last.obs.period.units = "month"
+#'   period.length = 6,
+#'   period.unit = "month"
 #' )
 #' }
 #'
-#' @importFrom dplyr filter group_by summarise n rename left_join mutate case_when across all_of arrange row_number rowwise ungroup
-#' @importFrom glue glue
-#' @importFrom lubridate period floor_date ceiling_date add_with_rollback
-#' @importFrom stringr str_detect
-#' @importFrom purrr map_chr
-#' @importFrom rlang sym
-#' @importFrom stats coef lm
 #' @export
 getEventTrendText <- function(event.df,
                               event.date.col,
@@ -56,11 +43,10 @@ getEventTrendText <- function(event.df,
                               event.type.col,
                               start.date,
                               end.date,
-                              last.obs.period.length = 1,
-                              last.obs.period.units = "month",
+                              period.length = 1,
+                              period.unit = "month",
                               use.ctry.regex = TRUE,
                               by.event.type = TRUE,
-                              aggregate.by = "month",
                               output.as.text = TRUE) {
 
   # Input validation
@@ -77,20 +63,16 @@ getEventTrendText <- function(event.df,
     stop(glue::glue("Missing required columns: {paste(missing.cols, collapse = ', ')}"))
   }
 
-  if (!aggregate.by %in% c("month", "quarter", "year")) {
-    stop("'aggregate.by' must be one of: 'month', 'quarter', 'year'")
-  }
-
-  if (!last.obs.period.units %in% c("month", "quarter", "year")) {
-    stop("'last.obs.period.units' must be one of: 'month', 'quarter', 'year'")
+  if (!period.unit %in% c("month", "quarter", "year")) {
+    stop("'period.unit' must be one of: 'month', 'quarter', 'year'")
   }
 
   if (length(ctry.id) == 0 || any(is.na(ctry.id)) || any(ctry.id == "")) {
     stop("'ctry.id' cannot be empty, NA, or contain empty strings")
   }
 
-  if (!is.numeric(last.obs.period.length) || last.obs.period.length <= 0) {
-    stop("'last.obs.period.length' must be positive")
+  if (!is.numeric(period.length) || period.length <= 0) {
+    stop("'period.length' must be positive")
   }
 
   # Coerce dates and validate
@@ -105,18 +87,20 @@ getEventTrendText <- function(event.df,
     stop("'end.date' cannot be earlier than 'start.date'")
   }
 
-  # Calculate derived dates
-  last.obs.start.date <- lubridate::add_with_rollback(
-    end.date,
-    -lubridate::period(last.obs.period.length, units = last.obs.period.units)
-  ) + 1
-  last.obs.end.date <- end.date
-
-  reference.start.date <- start.date
-  reference.end.date <- last.obs.start.date - 1
-
+  # Calculate derived dates properly
   overall.start.date <- start.date
   overall.end.date <- end.date
+
+  # Calculate last observed period (end of the overall period)
+  last.obs.end.date <- end.date
+  last.obs.start.date <- lubridate::add_with_rollback(
+    last.obs.end.date,
+    -lubridate::period(period.length, units = period.unit)
+  ) + 1
+
+  # Calculate reference period (entire period minus the last observed period)
+  reference.start.date <- overall.start.date
+  reference.end.date <- last.obs.start.date - 1
 
   # Coerce event date column
   if (!inherits(event.df[[event.date.col]], "Date")) {
@@ -189,7 +173,10 @@ getEventTrendText <- function(event.df,
   }
 
   labelChangeFromPct <- function(pct) {
+    # Handle NA values first
+    if (is.na(pct)) return("Insufficient data")
     if (is.infinite(pct)) return("Major increase")
+
     abs.pct <- abs(pct)
     if (abs.pct < 5) return("No change")
     if (abs.pct < 20) return(if (pct > 0) "Minor increase" else "Minor decrease")
@@ -197,7 +184,7 @@ getEventTrendText <- function(event.df,
     return(if (pct > 0) "Major increase" else "Major decrease")
   }
 
-  # Calculate reference & last observed counts
+  # Calculate reference & last observed counts using correct dates
   last.obs.counts.df <- countEventsInPeriod(event.sub.df, last.obs.start.date, last.obs.end.date)
   reference.counts.df <- countEventsInPeriod(event.sub.df, reference.start.date, reference.end.date)
 
@@ -214,9 +201,9 @@ getEventTrendText <- function(event.df,
   trend.df <- trend.df |>
     dplyr::mutate(
       time_period = dplyr::case_when(
-        aggregate.by == "month" ~ lubridate::floor_date(!!rlang::sym(event.date.col), "month"),
-        aggregate.by == "quarter" ~ lubridate::floor_date(!!rlang::sym(event.date.col), "quarter"),
-        aggregate.by == "year" ~ lubridate::floor_date(!!rlang::sym(event.date.col), "year")
+        period.unit == "month" ~ lubridate::floor_date(!!rlang::sym(event.date.col), "month"),
+        period.unit == "quarter" ~ lubridate::floor_date(!!rlang::sym(event.date.col), "quarter"),
+        period.unit == "year" ~ lubridate::floor_date(!!rlang::sym(event.date.col), "year")
       )
     )
 
@@ -276,7 +263,7 @@ getEventTrendText <- function(event.df,
   results.df$last_obs_count[is.na(results.df$last_obs_count)] <- 0
   results.df$reference_count[is.na(results.df$reference_count)] <- 0
 
-  # Add period metadata columns
+  # Add period metadata columns using corrected dates
   results.df <- results.df |>
     dplyr::mutate(
       reference_start = reference.start.date,
@@ -291,9 +278,9 @@ getEventTrendText <- function(event.df,
   results.df <- results.df |>
     dplyr::rowwise() |>
     dplyr::mutate(
-      interval_unit = aggregate.by,
-      reference_intervals = nIntervals(reference_start, reference_end, aggregate.by),
-      last_obs_intervals = nIntervals(last_obs_start, last_obs_end, aggregate.by),
+      interval_unit = period.unit,
+      reference_intervals = nIntervals(reference_start, reference_end, period.unit),
+      last_obs_intervals = nIntervals(last_obs_start, last_obs_end, period.unit),
       reference_avg = ifelse(reference_intervals > 0, reference_count / reference_intervals, NA_real_),
       last_obs_avg = ifelse(last_obs_intervals > 0, last_obs_count / last_obs_intervals, NA_real_)
     ) |>
@@ -329,6 +316,37 @@ getEventTrendText <- function(event.df,
   # Round for readability
   results.df$pct_change <- round(results.df$pct_change, 2)
   results.df$trend_slope <- round(results.df$trend_slope, 4)
+
+  # Data quality validation before proceeding
+  if (output.as.text) {
+    # Count how many event types have sufficient data
+    sufficient.data.count <- results.df |>
+      dplyr::summarise(
+        sufficient_trend = sum(!is.na(trend_slope) & trend_label != "Insufficient data", na.rm = TRUE),
+        sufficient_change = sum(!is.na(pct_change) & pct_change_label != "Insufficient data", na.rm = TRUE)
+      )
+
+    # If no event types have sufficient data for either trend or change analysis
+    if (sufficient.data.count$sufficient_trend == 0 && sufficient.data.count$sufficient_change == 0) {
+      stop(glue::glue(
+        "Insufficient data for meaningful trend analysis for {paste(ctry.id, collapse = ', ')}. ",
+        "Period analyzed: {overall.start.date} to {overall.end.date}. ",
+        "Consider using a longer time period or checking if events exist for this country."
+      ))
+    }
+
+    # If less than 25% of event types have sufficient data, issue a warning
+    total.event.types <- nrow(results.df)
+    sufficient.proportion <- (sufficient.data.count$sufficient_trend + sufficient.data.count$sufficient_change) / (2 * total.event.types)
+
+    if (sufficient.proportion < 0.25) {
+      warning(glue::glue(
+        "Limited data quality for trend analysis for {paste(ctry.id, collapse = ', ')}. ",
+        "Only {round(sufficient.proportion * 100, 1)}% of analyses have sufficient data. ",
+        "Consider using a longer time period for more robust results."
+      ))
+    }
+  }
 
   if (!output.as.text) {
     return(results.df)

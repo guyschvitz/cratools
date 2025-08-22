@@ -12,11 +12,10 @@ getEventTrendText(
   event.type.col,
   start.date,
   end.date,
-  last.obs.period.length = 1,
-  last.obs.period.units = "month",
+  period.length = 1,
+  period.unit = "month",
   use.ctry.regex = TRUE,
   by.event.type = TRUE,
-  aggregate.by = "month",
   output.as.text = TRUE
 )
 }
@@ -35,25 +34,19 @@ getEventTrendText(
 
 \item{end.date}{Date or YYYY-MM-DD. End of overall analysis period.}
 
-\item{last.obs.period.length}{integer. Length of the last observed period. Default 1.}
+\item{period.length}{integer. Length of the last observed period. Default 1.}
 
-\item{last.obs.period.units}{character. Units for last observed period ("month", "quarter", "year"). Default "month".}
+\item{period.unit}{character. Units for last observed period ("month", "quarter", "year"). Default "month".}
 
 \item{use.ctry.regex}{logical. If TRUE, regex-match countries; else exact match. Default TRUE.}
 
 \item{by.event.type}{logical. If TRUE, compute by event type; else totals. Default TRUE.}
 
-\item{aggregate.by}{character. One of "month","quarter","year". Default "month".}
-
 \item{output.as.text}{logical. If TRUE (default) return single character string; else data.frame.}
 }
 \value{
-If output.as.text = FALSE, a data.frame with:
-country, (event_type), reference_start/end, last_obs_start/end, overall_start/end,
-reference_count, last_obs_count, reference_intervals, last_obs_intervals,
-reference_avg, last_obs_avg, pct_change, pct_change_label,
-trend_slope, trend_label, and the two interpretation columns.
-If output.as.text = TRUE, a single character string with one block per country.
+If output.as.text = FALSE, a data.frame with trend analysis results.
+  If output.as.text = TRUE, a single character string with one block per country.
 }
 \description{
 Computes recent change (reference -> last observed, normalized by interval) and long-term trend
@@ -62,7 +55,6 @@ text block summarizing results per country.
 }
 \examples{
 \dontrun{
-# Example with ACLED data
 result <- getEventTrendText(
   event.df = acled.df,
   event.date.col = "event_date",
@@ -71,8 +63,8 @@ result <- getEventTrendText(
   event.type.col = "event_type",
   start.date = "2023-01-01",
   end.date = "2023-12-31",
-  last.obs.period.length = 6,
-  last.obs.period.units = "month"
+  period.length = 6,
+  period.unit = "month"
 )
 }
 
