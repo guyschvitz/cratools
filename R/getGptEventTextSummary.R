@@ -148,7 +148,7 @@ getGptEventTextSummary <- function(
         retry.delay = retry.delay
       )
 
-      resp.txt <- getGptResponseText(gpt.response = resp.ls, endpoint.type = "completions")
+      resp.txt <- jrcgpt::getGptResponseText(gpt.response = resp.ls, endpoint.type = "completions")
 
       # Validate response
       if (!is.character(resp.txt) || length(resp.txt) == 0) {
@@ -180,7 +180,7 @@ getGptEventTextSummary <- function(
     )
 
     final.summary <- jrcgpt::getGptResponseText(gpt.response = resp.ls,
-                                                endpoint.type = "completions")
+                                        endpoint.type = "completions")
 
     # Validate response
     if (!is.character(final.summary) || length(final.summary) == 0) {
