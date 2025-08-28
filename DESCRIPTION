@@ -1,7 +1,7 @@
 Package: cratools
 Type: Package
 Title: Conflict Risk Analytics Utility Functions
-Version: 0.1.4
+Version: 0.1.5
 Authors@R: c(
     person(
       "Guy", "Schvitz",
@@ -32,7 +32,8 @@ Imports:
     purrr,
     stringr,
     data.table,
-    tokenizers
+    tokenizers,
+    dbx
 Suggests: 
     testthat (>= 3.0.0),
     knitr,
