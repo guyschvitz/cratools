@@ -4,10 +4,10 @@
 \alias{dbUpdateAcled}
 \title{Update ACLED Data with Upsert Logic}
 \usage{
-dbUpdateAcled(connection, acled.new.df)
+dbUpdateAcled(con, acled.new.df)
 }
 \arguments{
-\item{connection}{A database connection object created with \code{\link[DBI]{dbConnect}}}
+\item{con}{A database connection object created with \code{\link[DBI]{dbConnect}}}
 
 \item{acled.new.df}{A data.frame containing new ACLED data. Must include
 columns 'event_id_cnty' and 'timestamp'}
@@ -22,19 +22,10 @@ by keeping only the most recent timestamp for each unique event identifier.
 }
 \examples{
 \dontrun{
-# Create database connection
-con <- DBI::dbConnect(odbc::odbc(), "connection_string")
-
-# Load new ACLED data
-acled.new.df <- read.csv("new_acled_data.csv")
-
 # Update database
 records.updated <- dbUpdateAcled(
-  connection = con, 
+  con = con,
   acled.new.df = acled.new.df
 )
-
-# Clean up
-DBI::dbDisconnect(con)
 }
 }
