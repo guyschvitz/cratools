@@ -11,7 +11,10 @@
 #' @param event.date.col character. Column name containing event dates.
 #' @param ctry.id.col character. Column name containing country identifiers.
 #' @param ctry.id character vector. Country identifier(s) to filter by.
-#' @param event.type.col character. Column name containing event type information.
+#' @param event.type.col character or NULL. Column name containing event type information.
+#'   Required only when `by.event.type = TRUE`. Default NULL.
+#' @param fatalities.col character or NULL. Column name containing fatality counts.
+#'   If provided, fatality totals will be included in output. Default NULL.
 #' @param use.ctry.regex logical. If TRUE, uses regex matching for country filtering;
 #'   if FALSE, uses exact matching. Default TRUE.
 #' @param by.event.type logical. If TRUE, results include event counts by event type.
@@ -26,7 +29,7 @@
 #'
 #' @examples
 #' \dontrun{
-#' # Example with ACLED data
+#' # Example with ACLED data, including fatalities
 #' result <- getEventCountText(
 #'   event.df = acled.df,
 #'   start.date = "2023-01-01",
@@ -34,7 +37,19 @@
 #'   event.date.col = "event_date",
 #'   ctry.id.col = "country",
 #'   ctry.id = "Nigeria",
-#'   event.type.col = "event_type"
+#'   event.type.col = "event_type",
+#'   fatalities.col = "fatalities"
+#' )
+#'
+#' # Example without event types, just totals
+#' result <- getEventCountText(
+#'   event.df = acled.df,
+#'   start.date = "2023-01-01",
+#'   end.date = "2023-12-31",
+#'   event.date.col = "event_date",
+#'   ctry.id.col = "country",
+#'   ctry.id = "Nigeria",
+#'   by.event.type = FALSE
 #' )
 #' }
 #'
@@ -45,8 +60,9 @@
 #' @export
 getEventCountText <- function(event.df, start.date, end.date = NULL,
                               event.date.col, ctry.id.col, ctry.id,
-                              event.type.col, use.ctry.regex = TRUE,
-                              by.event.type = TRUE, output.as.text = TRUE) {
+                              event.type.col = NULL, fatalities.col = NULL,
+                              use.ctry.regex = TRUE, by.event.type = TRUE,
+                              output.as.text = TRUE) {
 
   # Input validation
   if (!is.data.frame(event.df)) {
@@ -56,7 +72,20 @@ getEventCountText <- function(event.df, start.date, end.date = NULL,
     stop("'event.df' is empty")
   }
 
-  required.cols <- c(event.date.col, ctry.id.col, event.type.col)
+  # Check required columns based on parameters
+  required.cols <- c(event.date.col, ctry.id.col)
+
+  if (by.event.type) {
+    if (is.null(event.type.col)) {
+      stop("'event.type.col' is required when 'by.event.type = TRUE'")
+    }
+    required.cols <- c(required.cols, event.type.col)
+  }
+
+  if (!is.null(fatalities.col)) {
+    required.cols <- c(required.cols, fatalities.col)
+  }
+
   missing.cols <- setdiff(required.cols, names(event.df))
   if (length(missing.cols) > 0) {
     stop(glue::glue("Missing required columns: {paste(missing.cols, collapse = ', ')}"))
@@ -64,6 +93,13 @@ getEventCountText <- function(event.df, start.date, end.date = NULL,
 
   if (length(ctry.id) == 0 || any(is.na(ctry.id)) || any(ctry.id == "")) {
     stop("'ctry.id' cannot be empty, NA, or contain empty strings")
+  }
+
+  # Validate fatalities column if provided
+  if (!is.null(fatalities.col)) {
+    if (!is.numeric(event.df[[fatalities.col]])) {
+      stop(glue::glue("Column '{fatalities.col}' must be numeric"))
+    }
   }
 
   # Date validation and coercion
@@ -136,32 +172,82 @@ getEventCountText <- function(event.df, start.date, end.date = NULL,
     ) |>
     dplyr::rename(country = !!rlang::sym(ctry.id.col))
 
-  # Aggregate by event type
-  event.counts.df <- event.sub.df |>
-    dplyr::group_by(!!rlang::sym(ctry.id.col), !!rlang::sym(event.type.col)) |>
-    dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
-    dplyr::rename(country = !!rlang::sym(ctry.id.col), event_type = !!rlang::sym(event.type.col))
-
-  # Calculate total counts
-  total.counts.df <- event.counts.df |>
-    dplyr::group_by(country) |>
-    dplyr::summarise(n = sum(n, na.rm = TRUE), .groups = "drop") |>
-    dplyr::mutate(event_type = "Total events")
-
-  # Combine results based on by.event.type parameter
+  # Aggregate by event type (if requested)
   if (by.event.type) {
+    # Create base grouping
+    if (!is.null(fatalities.col)) {
+      event.counts.df <- event.sub.df |>
+        dplyr::group_by(!!rlang::sym(ctry.id.col), !!rlang::sym(event.type.col)) |>
+        dplyr::summarise(
+          n = dplyr::n(),
+          fatalities = sum(!!rlang::sym(fatalities.col), na.rm = TRUE),
+          .groups = "drop"
+        ) |>
+        dplyr::rename(country = !!rlang::sym(ctry.id.col), event_type = !!rlang::sym(event.type.col))
+    } else {
+      event.counts.df <- event.sub.df |>
+        dplyr::group_by(!!rlang::sym(ctry.id.col), !!rlang::sym(event.type.col)) |>
+        dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
+        dplyr::rename(country = !!rlang::sym(ctry.id.col), event_type = !!rlang::sym(event.type.col))
+    }
+
+    # Calculate total counts
+    if (!is.null(fatalities.col)) {
+      total.counts.df <- event.counts.df |>
+        dplyr::group_by(country) |>
+        dplyr::summarise(
+          n = sum(n, na.rm = TRUE),
+          fatalities = sum(fatalities, na.rm = TRUE),
+          .groups = "drop"
+        ) |>
+        dplyr::mutate(event_type = "Total events")
+    } else {
+      total.counts.df <- event.counts.df |>
+        dplyr::group_by(country) |>
+        dplyr::summarise(n = sum(n, na.rm = TRUE), .groups = "drop") |>
+        dplyr::mutate(event_type = "Total events")
+    }
+
+    # Combine totals with type-specific counts
     combined.counts.df <- dplyr::bind_rows(total.counts.df, event.counts.df)
+
   } else {
-    combined.counts.df <- total.counts.df
+    # Only calculate totals
+    if (!is.null(fatalities.col)) {
+      combined.counts.df <- event.sub.df |>
+        dplyr::group_by(!!rlang::sym(ctry.id.col)) |>
+        dplyr::summarise(
+          n = dplyr::n(),
+          fatalities = sum(!!rlang::sym(fatalities.col), na.rm = TRUE),
+          .groups = "drop"
+        ) |>
+        dplyr::rename(country = !!rlang::sym(ctry.id.col)) |>
+        dplyr::mutate(event_type = "Total events")
+    } else {
+      combined.counts.df <- event.sub.df |>
+        dplyr::group_by(!!rlang::sym(ctry.id.col)) |>
+        dplyr::summarise(n = dplyr::n(), .groups = "drop") |>
+        dplyr::rename(country = !!rlang::sym(ctry.id.col)) |>
+        dplyr::mutate(event_type = "Total events")
+    }
   }
 
   # Add date ranges and create event text
-  results.df <- combined.counts.df |>
-    dplyr::left_join(date.ranges.df, by = "country") |>
-    dplyr::mutate(event_text = paste(event_type, n, sep = ": ")) |>
-    dplyr::arrange(country,
-                   event_type != "Total events",
-                   event_type)
+  if (!is.null(fatalities.col)) {
+    results.df <- combined.counts.df |>
+      dplyr::left_join(date.ranges.df, by = "country") |>
+      dplyr::mutate(event_text = glue::glue("{event_type}: {n} events, {fatalities} fatalities")) |>
+      dplyr::arrange(country,
+                     event_type != "Total events",
+                     event_type)
+  } else {
+    results.df <- combined.counts.df |>
+      dplyr::left_join(date.ranges.df, by = "country") |>
+      dplyr::mutate(event_text = paste(event_type, n, sep = ": ")) |>
+      dplyr::arrange(country,
+                     event_type != "Total events",
+                     event_type)
+  }
 
   # Return data.frame if requested
   if (!output.as.text) {

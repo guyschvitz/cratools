@@ -11,7 +11,8 @@ getEventCountText(
   event.date.col,
   ctry.id.col,
   ctry.id,
-  event.type.col,
+  event.type.col = NULL,
+  fatalities.col = NULL,
   use.ctry.regex = TRUE,
   by.event.type = TRUE,
   output.as.text = TRUE
@@ -31,7 +32,11 @@ If NULL, all events from start.date onwards are included.}
 
 \item{ctry.id}{character vector. Country identifier(s) to filter by.}
 
-\item{event.type.col}{character. Column name containing event type information.}
+\item{event.type.col}{character or NULL. Column name containing event type information.
+Required only when `by.event.type = TRUE`. Default NULL.}
+
+\item{fatalities.col}{character or NULL. Column name containing fatality counts.
+If provided, fatality totals will be included in output. Default NULL.}
 
 \item{use.ctry.regex}{logical. If TRUE, uses regex matching for country filtering;
 if FALSE, uses exact matching. Default TRUE.}
@@ -54,7 +59,7 @@ text summaries suitable for Large Language Model (LLM) processing.
 }
 \examples{
 \dontrun{
-# Example with ACLED data
+# Example with ACLED data, including fatalities
 result <- getEventCountText(
   event.df = acled.df,
   start.date = "2023-01-01",
@@ -62,7 +67,19 @@ result <- getEventCountText(
   event.date.col = "event_date",
   ctry.id.col = "country",
   ctry.id = "Nigeria",
-  event.type.col = "event_type"
+  event.type.col = "event_type",
+  fatalities.col = "fatalities"
+)
+
+# Example without event types, just totals
+result <- getEventCountText(
+  event.df = acled.df,
+  start.date = "2023-01-01",
+  end.date = "2023-12-31",
+  event.date.col = "event_date",
+  ctry.id.col = "country",
+  ctry.id = "Nigeria",
+  by.event.type = FALSE
 )
 }
 
