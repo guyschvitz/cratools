@@ -36,7 +36,7 @@
 #' \dontrun{
 #' # Example 1: Monthly periods using period.unit
 #' start_dates <- c("2024-01-01", "2024-03-01", "2024-06-01")
-#' result <- getEventDataByPeriod(
+#' result <- getEventDataByPeriods(
 #'   event.df = acled_data,
 #'   ctry.id = "Nigeria",
 #'   period.start.dates = start_dates,
@@ -48,7 +48,7 @@
 #' end_dates <- c("2008-12-31", "2012-06-30", "2016-03-31")
 #' labels <- c("2007 Election Cycle", "2011 Election Cycle", "2015 Election Cycle")
 #'
-#' result <- getEventDataByPeriod(
+#' result <- getEventDataByPeriods(
 #'   event.df = acled_data,
 #'   ctry.id = "Nigeria",
 #'   period.start.dates = start_dates,
@@ -58,7 +58,7 @@
 #'
 #' # Example 3: Quarterly periods
 #' start_dates <- as.Date(c("2024-01-01", "2024-04-01", "2024-07-01"))
-#' result <- getEventDataByPeriod(
+#' result <- getEventDataByPeriods(
 #'   event.df = acled_data,
 #'   ctry.id = "Nigeria",
 #'   period.start.dates = start_dates,
@@ -75,7 +75,7 @@
 #' @importFrom purrr pmap map
 #' @importFrom lubridate period
 #' @export
-getEventDataByPeriod <- function(event.df,
+getEventDataByPeriods <- function(event.df,
                                  ctry.id,
                                  period.start.dates,
                                  period.end.dates = NULL,
@@ -208,7 +208,8 @@ getEventDataByPeriod <- function(event.df,
           dplyr::filter(
             !!sym(event.date.col) >= period.start &
               !!sym(event.date.col) <= period.end
-          )
+          ) |>
+          dplyr::mutate(period_label = period.label)
 
         event.count <- nrow(period.events.df)
         message("    - Found ", event.count, " events for ", period.label)
@@ -260,7 +261,7 @@ getEventDataByPeriod <- function(event.df,
     return(result.ls)
 
   }, error = function(e) {
-    error.msg <- paste("Error in getEventDataByPeriod for", ctry.id, ":", e$message)
+    error.msg <- paste("Error in getEventDataByPeriods for", ctry.id, ":", e$message)
     message(error.msg)
     stop(error.msg, call. = FALSE)
   })
